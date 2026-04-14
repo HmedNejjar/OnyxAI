@@ -1,8 +1,8 @@
-from Tokenizer.BPE import BPE
+from BPE import BPE
 from pathlib import Path
 
 FILE_PATH = Path(r'corpus.txt')
-VOCAB_SIZE = 10000
+VOCAB_SIZE = 12000
 
 with open(FILE_PATH, 'r') as f:
     text = f.read()
