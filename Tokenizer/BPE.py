@@ -82,7 +82,7 @@ class BPE:
         """
         return {new_id: pair for pair, new_id in merges.items()}
 
-    def _decode_token(self, id: int, reversed_merges: dict[int, tuple]) -> str:
+    def _decode_token(self, id: int, reversed_merges: dict[int, tuple]) -> bytes:
         """
         Recursively expand a single token id down to its raw bytes.
         Base case: ids 0-255 map directly to characters via chr().
@@ -96,7 +96,7 @@ class BPE:
             The string that this token represents.
         """
         if id < 256:
-            return chr(id)
+            return bytes([id])
         pair = reversed_merges[id]
         return self._decode_token(pair[0], reversed_merges) + self._decode_token(pair[1], reversed_merges)
 
@@ -135,7 +135,8 @@ class BPE:
         Returns:
             Reconstructed string.
         """
-        return ''.join([self._decode_token(id, reversed_merges) for id in ids])
+        byte_seq = b"".join(self._decode_token(token_id, reversed_merges) for token_id in ids)
+        return byte_seq.decode("utf-8")
 
     def save(self, merges: dict[tuple, int], path: str | Path) -> None:
         """
