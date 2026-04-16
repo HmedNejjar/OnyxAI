@@ -1,9 +1,10 @@
 import sys
 import torch
 from torch.utils.data import Dataset,  DataLoader
+
+sys.path.insert(1, "G:\\Projects\\Python\\OnyxAI")
 from Tokenizer.BPE import BPE
 
-sys.path.insert(1, "G:\\Projects\\Python\\OnyxAI\\Tokenizer\\BPE.py")
 
 class GPTDataset(Dataset):
     """
