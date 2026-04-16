@@ -7,7 +7,7 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.model_dim = model_dim
         self.num_heads = num_heads
-        self.head_dim = model_dim / num_heads
+        self.head_dim = model_dim // num_heads
         
         # Linear Layers Q, K, V
         self.q_linear = nn.Linear(model_dim, model_dim)

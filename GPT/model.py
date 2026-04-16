@@ -1,4 +1,3 @@
-import sys
 import torch
 from torch import Tensor, nn
 from Transformer import TransformerBlock
