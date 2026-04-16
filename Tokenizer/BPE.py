@@ -12,8 +12,9 @@ class BPE:
             vocab_size: Total tokens in the final vocabulary (base 256 bytes + learned merges).
         """
         self.vocab_size = vocab_size
+        self.merges = {}
 
-    def encode(self, text: str, merges: dict[tuple, int]) -> list[int]:
+    def encode(self, text: str) -> list[int]:
         """
         Turn text into a list of token ids.
         Starts from raw bytes, then applies each learned merge in the order it was learned.
@@ -26,7 +27,7 @@ class BPE:
             List of token ids representing the encoded text.
         """
         ids = list(text.encode())
-        for pair, merged_id in sorted(merges.items(), key=lambda x: x[1]):
+        for pair, merged_id in sorted(self.merges.items(), key=lambda x: x[1]):
             ids = self.merge(ids, pair, merged_id)
         return ids
 
@@ -70,7 +71,7 @@ class BPE:
             counts[pair] = counts.get(pair, 0) + 1
         return counts
 
-    def reverse_merge(self, merges: dict[tuple, int]) -> dict[int, tuple]:
+    def reverse_merge(self) -> dict[int, tuple]:
         """
         Flip the merge table so decoding can expand a merged id back into its two parts.
 
@@ -80,7 +81,7 @@ class BPE:
         Returns:
             Reversed table — maps each merged token id back to its (left, right) pair.
         """
-        return {new_id: pair for pair, new_id in merges.items()}
+        return {new_id: pair for pair, new_id in self.merges.items()}
 
     def _decode_token(self, id: int, reversed_merges: dict[int, tuple]) -> bytes:
         """
@@ -112,8 +113,7 @@ class BPE:
             merges: All learned merge rules in the order they were learned.
             ids: The fully merged token sequence of the training text.
         """
-        merges = {}
-        ids = self.encode(text, merges)
+        ids = self.encode(text)
         for i in range(self.vocab_size - 256):
             new_id = 256 + i
             counts = self.adjacent_pairs(ids)
@@ -121,10 +121,10 @@ class BPE:
                 break
             best_pair = max(counts, key=lambda pair: counts[pair])
             ids = self.merge(ids, best_pair, new_id)
-            merges[best_pair] = new_id
-        return merges, ids
+            self.merges[best_pair] = new_id
+        return self.merges, ids
 
-    def decode(self, ids: list, reversed_merges: dict[int, tuple]) -> str:
+    def decode(self, ids: list) -> str:
         """
         Convert a list of token ids back into a string.
 
@@ -135,6 +135,7 @@ class BPE:
         Returns:
             Reconstructed string.
         """
+        reversed_merges = self.reverse_merge()
         byte_seq = b"".join(self._decode_token(token_id, reversed_merges) for token_id in ids)
         return byte_seq.decode("utf-8")
 
