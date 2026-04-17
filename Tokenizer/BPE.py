@@ -42,17 +42,15 @@ class BPE:
             merge_id: The new token id that replaces the pair.
 
         Returns:
-            New list with all occurrences of pair collapsed into merge_id.
+            list with all occurrences of pair collapsed into merge_id.
         """
-        result, i = [], 0
-        while i < len(ids):
-            if i < len(ids) - 1 and ids[i] == pair[0] and ids[i + 1] == pair[1]:
-                result.append(merge_id)
-                i += 2
+        i = 0
+        while i < len(ids) - 1:
+            if ids[i] == pair[0] and ids[i + 1] == pair[1]:
+                ids[i:i+2] = [merge_id]  # Replace two elements with one
             else:
-                result.append(ids[i])
                 i += 1
-        return result
+        return ids
 
     def adjacent_pairs(self, ids: list) -> dict[tuple, int]:
         """
