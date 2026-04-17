@@ -41,7 +41,7 @@ def load_corpus(path: Path | str) -> str:
 def load_tokenizer(path:Path | str) -> BPE:
     tokenizer = BPE(VOCAB_SIZE)
     print(f"Loading existing tokenizer from: {path}\n")
-    tokenizer.merges = tokenizer.load(path)
+    tokenizer.load(path)
     return tokenizer
 
 def train() -> None:
