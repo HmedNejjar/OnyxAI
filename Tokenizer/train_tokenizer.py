@@ -2,9 +2,18 @@ from BPE import BPE
 from pathlib import Path
 import time
 
-FILE_PATH = Path(r'G:\Projects\Python\OnyxAI\Corpus\bookcorpus_p1.txt')
-SAVE_TOKENIZER = Path(r'bpe_30k_vocab.json')
-VOCAB_SIZE = 30000
+"""
+BPE Tokenizer Training Script
+
+This script trains a Byte-Pair Encoding (BPE) tokenizer on a specified corpus
+and saves the trained tokenizer for later use. It provides detailed statistics
+about the training process and verifies the tokenizer with a test example.
+"""
+
+# Configuration
+FILE_PATH = Path(r'G:\Projects\Python\OnyxAI\Corpus\bookcorpus_p1.txt')  # Path to training corpus
+SAVE_TOKENIZER = Path(r'bpe_30k_vocab.json')  # Path to save trained tokenizer
+VOCAB_SIZE = 30000  # Target vocabulary size
 
 if __name__ == "__main__":
     print("=" * 60)
