@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import Tensor, nn, optim
 from torch.utils.data import DataLoader
@@ -28,8 +29,8 @@ LOG_PERIOD = 10
 PATIENCE = 20  # Early stopping patience
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 TOKENIZER = PARENT_FOLDER / Path(r'Tokenizer/merges.json')
-TRAIN_PATH = PARENT_FOLDER / Path(r'Corpus/TinyStoriesV2-train.txt')
-VAL_PATH = PARENT_FOLDER / Path(r'Corpus/TinyStoriesV2-valid.txt')
+TRAIN_PATH = PARENT_FOLDER / Path(r'Corpus/train_tokens.npy')
+VAL_PATH = PARENT_FOLDER / Path(r'Corpus/val_tokens.npy')
 MODEL_SAVE_PATH = Path('best_model.pth')  # Path for the best model
 
 
@@ -54,8 +55,8 @@ def train() -> None:
     
     # Create Datasets
     print("Creating datasets...\n")
-    train_dataset = GPTDataset(train_corpus, tokenizer, CONTEXT_SIZE)
-    val_dataset = GPTDataset(val_corpus, tokenizer, CONTEXT_SIZE)
+    train_dataset = GPTDataset(train_corpus, TRAIN_PATH, CONTEXT_SIZE)
+    val_dataset = GPTDataset(val_corpus, VAL_PATH, CONTEXT_SIZE)
     
     # Create Dataloaders
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -64,6 +65,12 @@ def train() -> None:
     #Initiate model
     print("Initializing model...\n")
     model = Onyx(VOCAB_SIZE, MODEL_DIM, NUM_HEADS, NUM_LAYERS, FF_DIM, CONTEXT_SIZE, DROPOUT).to(DEVICE)
+    
+    # Load pre-trained model if available
+    if MODEL_SAVE_PATH.exists():
+        print(f"Loading pre-trained model from {MODEL_SAVE_PATH}...")
+        model_state = load_params(MODEL_SAVE_PATH)
+        model.load_state_dict(model_state)
     
     # Configure Optimizer and Loss function
     optimizer = optim.AdamW(model.parameters(), lr=LR)
