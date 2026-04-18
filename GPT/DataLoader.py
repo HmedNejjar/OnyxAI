@@ -27,7 +27,7 @@ class GPTDataset(Dataset):
         GPTDataset: A dataset instance that yields `(context, target)` pairs
         from the tokenized data.
     """
-    def __init__(self, text: str, tokens_path: str | Path, context_size: int) -> None:
+    def __init__(self, tokens_path: str | Path, context_size: int) -> None:
         """
         Build a dataset from pre-tokenized numpy data.
 
@@ -99,7 +99,7 @@ class GPTDataset(Dataset):
             DataLoader: A PyTorch dataloader that yields batched context and
             target tensors with shuffling enabled.
         """
-        dataset = GPTDataset(text, tokens_path, context_size)
+        dataset = GPTDataset(tokens_path, context_size)
         # Shuffle samples so the model sees varied training batches each epoch
         return DataLoader(dataset, batch_size=batch_size, shuffle=True)
 

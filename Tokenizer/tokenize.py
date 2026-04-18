@@ -1,137 +1,96 @@
-import numpy as np
-from pathlib import Path
 from BPE import BPE
+from pathlib import Path
 import time
 
 """
-Dataset tokenization script
+Corpus Tokenization Script (with Chunked Loading)
 
-This script handles the tokenization of large text datasets using the BPE tokenizer
-and saves the tokenized data as binary numpy files for efficient loading during training.
+This script tokenizes a large text corpus and saves the token IDs as a numpy
+file for efficient training data loading. Perfect for large datasets that don't
+fit in memory.
 
-Key features:
-- Loads existing tokenizer or trains a new one if needed
-- Tokenizes large text files efficiently
-- Saves tokenized data as compact numpy arrays
-- Provides detailed timing and compression statistics
+Process:
+1. Load pretrained BPE tokenizer
+2. Stream through corpus in chunks
+3. Tokenize each chunk
+4. Write tokens to memory-mapped numpy file
+5. Return total token count for training loop
 """
 
-# Configuration parameters
-VOCAB_SIZE = 22000  # Size of the tokenizer vocabulary
-PARENT_FOLDER = Path(r'G:\Projects\Python\OnyxAI')
+# Configuration
+TOKENIZER_PATH = Path(r'G:\Projects\Python\OnyxAI\Tokenizer\bpe_30k_vocab.json')  # Trained tokenizer
+CORPUS_PATH = Path(r'G:\Projects\Python\OnyxAI\Corpus\TinyStoriesV2-valid.txt')  # Corpus to tokenize
+OUTPUT_PATH = Path(r'G:\Projects\Python\OnyxAI\Corpus\tokenized_valid.npy')  # Output token file
+VOCAB_SIZE = 30000  # Must match tokenizer vocab size
+CHUNK_SIZE = 10_000_000  # 10 MB chunks
 
-# Paths to files
-TOKENIZER_PATH = PARENT_FOLDER / Path(r'Tokenizer/merges.json')  # Saved tokenizer
-TRAIN_TEXT_PATH = PARENT_FOLDER / Path(r'Corpus/TinyStoriesV2-train.txt')  # Training text
-VAL_TEXT_PATH = PARENT_FOLDER / Path(r'Corpus/TinyStoriesV2-valid.txt')  # Validation text
-TRAIN_TOKENS_PATH = PARENT_FOLDER / Path(r'Corpus/train_tokens.npy')  # Output tokenized training data
-VAL_TOKENS_PATH = PARENT_FOLDER / Path(r'Corpus/val_tokens.npy')  # Output tokenized validation data
-
-def tokenize_and_save(text_path: Path, tokens_path: Path, tokenizer: BPE) -> None:
-    """
-    Tokenize a text file and save the tokenized data as a binary numpy file.
-    
-    Args:
-        text_path (Path): Path to the input text file
-        tokens_path (Path): Path to save the tokenized data
-        tokenizer (BPE): BPE tokenizer instance to use for tokenization
-    """
-    print(f"\n  Processing: {text_path.name}")
-    print(f"    Loading text...")
-    
-    # Measure time to load text
-    start_time = time.time()
-    
-    with open(text_path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    
-    load_time = time.time() - start_time
-    print(f"    Loaded {len(text):,} characters in {load_time:.2f}s")
-    
-    # Measure time to tokenize
-    print(f"    Tokenizing...")
-    tokenize_start = time.time()
-    tokens = tokenizer.encode(text)
-    tokenize_time = time.time() - tokenize_start
-    
-    print(f"    Generated {len(tokens):,} tokens in {tokenize_time:.2f}s")
-    print(f"    Tokenization speed: {len(text)/tokenize_time:,.0f} chars/sec")
-    
-    # Measure time to save
-    print(f"    Saving to {tokens_path.name}...")
-    save_start = time.time()
-    np.save(tokens_path, np.array(tokens, dtype=np.uint32))  # Use uint32 for memory efficiency
-    save_time = time.time() - save_start
-    
-    # Calculate statistics
-    file_size = tokens_path.stat().st_size
-    compression = len(text) / len(tokens)
-    
-    print(f"    Saved {file_size:,} bytes in {save_time:.2f}s")
-    print(f"    Compression: {len(text):,} chars → {len(tokens):,} tokens ({compression:.2f}x)")
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Dataset Tokenization")
-    print("=" * 60)
+    print("=" * 70)
+    print("Corpus Tokenization Script (Chunked Loading)")
+    print("=" * 70)
     
-    # Create directories if they don't exist
-    print(f"\n[1] Checking paths...")
-    TOKENIZER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    TRAIN_TOKENS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # Verify files exist
+    if not TOKENIZER_PATH.exists():
+        print(f"\n✗ Error: Tokenizer not found at {TOKENIZER_PATH.absolute()}")
+        print("  Train the tokenizer first using train_tokenizer_chunked.py")
+        exit(1)
     
-    print(f"    Tokenizer path: {TOKENIZER_PATH}")
-    print(f"    Train text:     {TRAIN_TEXT_PATH}")
-    print(f"    Validation text: {VAL_TEXT_PATH}")
+    if not CORPUS_PATH.exists():
+        print(f"\n✗ Error: Corpus file not found at {CORPUS_PATH.absolute()}")
+        exit(1)
     
-    # Check if tokenizer exists
-    if TOKENIZER_PATH.exists():
-        print(f"\n[2] Loading existing tokenizer from {TOKENIZER_PATH}...")
-        tokenizer = BPE(VOCAB_SIZE)
-        tokenizer.load(TOKENIZER_PATH)
-        print(f"    ✓ Tokenizer loaded successfully")
-    else:
-        print(f"\n[2] Training new tokenizer (vocab_size={VOCAB_SIZE:,})...")
-        print(f"    Training on: {TRAIN_TEXT_PATH.name}")
-        
-        if not TRAIN_TEXT_PATH.exists():
-            print(f"\n✗ Error: Training file not found at {TRAIN_TEXT_PATH}")
-            exit(1)
-        
-        with open(TRAIN_TEXT_PATH, 'r', encoding='utf-8') as f:
-            text = f.read()
-        
-        print(f"    Loaded {len(text):,} characters for training")
-        print(f"    Training tokenizer... (this may take a while)")
-        
-        start_time = time.time()
-        tokenizer = BPE(VOCAB_SIZE)
-        tokenizer.train(text, save_path=TOKENIZER_PATH)
-        training_time = time.time() - start_time
-        
-        print(f"    ✓ Training completed in {training_time:.2f} seconds")
+    # Get file info
+    corpus_size = CORPUS_PATH.stat().st_size
+    corpus_size_mb = corpus_size / 1024 / 1024
     
-    # Tokenize datasets
-    print(f"\n[3] Tokenizing datasets...")
-    print(f"    {'─' * 50}")
+    print(f"\n[1] Loading Tokenizer...")
+    print(f"    From: {TOKENIZER_PATH.absolute()}")
     
-    if TRAIN_TEXT_PATH.exists():
-        tokenize_and_save(TRAIN_TEXT_PATH, TRAIN_TOKENS_PATH, tokenizer)
-    else:
-        print(f"  ✗ Training file not found: {TRAIN_TEXT_PATH}")
+    encoder = BPE(vocab_size=VOCAB_SIZE)
+    encoder.load(TOKENIZER_PATH)
     
-    if VAL_TEXT_PATH.exists():
-        tokenize_and_save(VAL_TEXT_PATH, VAL_TOKENS_PATH, tokenizer)
-    else:
-        print(f"  ✗ Validation file not found: {VAL_TEXT_PATH}")
+    print(f"\n[2] Corpus Information:")
+    print(f"    File: {CORPUS_PATH.absolute()}")
+    print(f"    Size: {corpus_size_mb:.2f} MB ({corpus_size:,} bytes)")
+    print(f"    Chunk size: {CHUNK_SIZE / 1024 / 1024:.1f} MB")
     
-    # Summary
-    print(f"\n[4] Summary")
-    print(f"    {'─' * 50}")
-    print(f"    Tokenizer:        {TOKENIZER_PATH.name}")
-    print(f"    Train tokens:     {TRAIN_TOKENS_PATH.name if TRAIN_TOKENS_PATH.exists() else 'Not created'}")
-    print(f"    Validation tokens: {VAL_TOKENS_PATH.name if VAL_TOKENS_PATH.exists() else 'Not created'}")
+    print(f"\n[3] Output Configuration:")
+    print(f"    Will save to: {OUTPUT_PATH.absolute()}")
+    print(f"    Format: numpy memory-mapped uint32 array")
     
-    print("\n" + "=" * 60)
-    print("Tokenization complete!")
-    print("=" * 60)
+    # Tokenize corpus
+    print(f"\n[4] Tokenizing corpus...")
+    
+    start_time = time.time()
+    total_tokens = encoder.tokenize_corpus_chunked(
+        file_path=CORPUS_PATH,
+        output_path=OUTPUT_PATH,
+        chunk_size=CHUNK_SIZE,
+        show_progress=True
+    )
+    tokenization_time = time.time() - start_time
+    
+    # Final statistics
+    output_size = OUTPUT_PATH.stat().st_size
+    output_size_mb = output_size / 1024 / 1024
+    compression_ratio = corpus_size / total_tokens
+    
+    print(f"\n[5] Tokenization Complete!")
+    print(f"    {'─' * 60}")
+    print(f"    Time elapsed         : {tokenization_time:.2f} seconds")
+    print(f"    Original size        : {corpus_size_mb:.2f} MB")
+    print(f"    Token file size      : {output_size_mb:.2f} MB")
+    print(f"    Total tokens         : {total_tokens:,}")
+    print(f"    Compression ratio    : {compression_ratio:.2f}x")
+    print(f"    Tokens per second    : {total_tokens / tokenization_time:,.0f}")
+    print(f"    {'─' * 60}")
+    
+    # Space comparison
+    space_saved_mb = corpus_size_mb - output_size_mb
+    space_saved_percent = (space_saved_mb / corpus_size_mb) * 100
+    
+    print(f"\n[6] Space Comparison:")
+    print(f"    Original text        : {corpus_size_mb:>12.2f} MB")
+    print(f"    Tokenized (uint32)   : {output_size_mb:>12.2f} MB")
+    print(f"    Space saved          : {space_saved_mb:>12.2f} MB ({space_saved_percent:.1f}%)")

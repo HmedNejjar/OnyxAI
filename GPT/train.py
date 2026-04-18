@@ -42,9 +42,9 @@ PATIENCE = 20           # Early stopping patience
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # Device to use
 
 # File paths
-TOKENIZER = PARENT_FOLDER / Path(r'Tokenizer/merges.json')  # Path to tokenizer
-TRAIN_PATH = PARENT_FOLDER / Path(r'Corpus/train_tokens.npy')  # Path to training tokens
-VAL_PATH = PARENT_FOLDER / Path(r'Corpus/val_tokens.npy')  # Path to validation tokens
+TOKENIZER = PARENT_FOLDER / Path(r'Tokenizer/bpe_30k_vocab.json')  # Path to tokenizer
+TRAIN_PATH = PARENT_FOLDER / Path(r'Corpus/tokenized_train.npy')  # Path to training tokens
+VAL_PATH = PARENT_FOLDER / Path(r'Corpus/tokenized_valid.npy')  # Path to validation tokens
 MODEL_SAVE_PATH = Path('best_model.pth')  # Path to save the best model
 
 
@@ -91,8 +91,8 @@ def train() -> None:
     
     # Create Datasets
     print("Creating datasets...\n")
-    train_dataset = GPTDataset('', TRAIN_PATH, CONTEXT_SIZE)  # Empty string for compatibility
-    val_dataset = GPTDataset('', VAL_PATH, CONTEXT_SIZE)      # Empty string for compatibility
+    train_dataset = GPTDataset(TRAIN_PATH, CONTEXT_SIZE)  # Empty string for compatibility
+    val_dataset = GPTDataset(VAL_PATH, CONTEXT_SIZE)      # Empty string for compatibility
     
     print(f"Training dataset size: {len(train_dataset):,} samples\n")
     print(f"Validation dataset size: {len(val_dataset):,} samples\n")
