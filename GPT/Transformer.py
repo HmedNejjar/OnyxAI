@@ -1,8 +1,6 @@
 from attention import MultiHeadAttention
 from FFN import FeedForward
 from torch import Tensor, nn
-import torch
-
 
 class TransformerBlock(nn.Module):
     """

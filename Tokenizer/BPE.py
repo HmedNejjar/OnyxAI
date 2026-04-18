@@ -5,6 +5,7 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.decoders import ByteLevel as ByteLevelDecoder
 import urllib.request
+import numpy as np
 
 
 class BPE:
@@ -186,8 +187,7 @@ class BPE:
         
         return total_tokens
 
-    def tokenize_corpus_chunked(self, file_path: str | Path, output_path: str | Path,
-                                chunk_size: int = 10_000_000, show_progress: bool = True) -> int:
+    def tokenize_corpus_chunked(self, file_path: str | Path, output_path: str | Path, chunk_size: int = 10_000_000, show_progress: bool = True) -> int:
         """
         Tokenize a large corpus file and save token IDs to a numpy file.
         
@@ -203,7 +203,6 @@ class BPE:
         Returns:
             int: Total number of tokens generated from the corpus
         """
-        import numpy as np
         
         file_path = Path(file_path)
         output_path = Path(output_path)
@@ -251,6 +250,13 @@ class BPE:
         
         # Flush to disk
         token_array.flush()
+        del token_array
+        
+        # Save as clean numpy array without memmap
+        if show_progress:
+            print(f"[BPE] Finalizing array format...")
+        clean_array = np.load(output_path, mmap_mode=None)
+        np.save(output_path, clean_array)
         
         if show_progress:
             output_size_mb = output_path.stat().st_size / 1024 / 1024

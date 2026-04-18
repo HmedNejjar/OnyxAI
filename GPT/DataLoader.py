@@ -4,10 +4,6 @@ import numpy as np
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader
 
-sys.path.insert(1, "G:\\Projects\\Python\\OnyxAI")
-from Tokenizer.BPE import BPE
-
-
 class GPTDataset(Dataset):
     """
     Dataset for preparing autoregressive language-model training samples.
@@ -17,7 +13,6 @@ class GPTDataset(Dataset):
     prediction training.
 
     Args:
-        text (str): Raw training text (kept for API compatibility).
         tokens_path (str | Path): Path to numpy file containing pre-tokenized
             token ids saved in .npy format.
         context_size (int): Number of tokens to use as the input context
@@ -32,16 +27,14 @@ class GPTDataset(Dataset):
         Build a dataset from pre-tokenized numpy data.
 
         Args:
-            text (str): Raw text (unused, kept for API compatibility).
-            tokens_path (str | Path): Path to the .npy file containing
-                pre-computed token ids.
+            tokens_path (str | Path): Path to the .npy file containing pre-computed token ids.
             context_size (int): Number of tokens in each input context window.
 
         Returns:
             None: This method initializes the dataset in place.
         """
         super().__init__()
-        self.tokens = np.load(tokens_path, mmap_mode='r')
+        self.tokens = np.load(tokens_path, mmap_mode='r+')
         self.context_size = context_size
         
     def __len__(self) -> int:
@@ -85,21 +78,18 @@ class GPTDataset(Dataset):
         
         return (context, target)
 
-    def get_dataloader(self, text: str, tokens_path: str | Path, context_size: int, batch_size: int) -> DataLoader:
+    def get_dataloader(self, tokens_path: str | Path, context_size: int, batch_size: int) -> DataLoader:
         """
         Create a shuffled dataloader for GPT training.
 
         Args:
-            text (str): Raw text (unused, kept for API compatibility).
             tokens_path (str | Path): Path to pre-tokenized numpy data file.
             context_size (int): Number of tokens in each input context window.
             batch_size (int): Number of samples per batch.
 
         Returns:
-            DataLoader: A PyTorch dataloader that yields batched context and
-            target tensors with shuffling enabled.
+            DataLoader: A PyTorch dataloader that yields batched context and target tensors with shuffling enabled.
         """
         dataset = GPTDataset(tokens_path, context_size)
         # Shuffle samples so the model sees varied training batches each epoch
         return DataLoader(dataset, batch_size=batch_size, shuffle=True)
-

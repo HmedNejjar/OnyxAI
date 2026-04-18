@@ -47,23 +47,6 @@ TRAIN_PATH = PARENT_FOLDER / Path(r'Corpus/tokenized_train.npy')  # Path to trai
 VAL_PATH = PARENT_FOLDER / Path(r'Corpus/tokenized_valid.npy')  # Path to validation tokens
 MODEL_SAVE_PATH = Path('best_model.pth')  # Path to save the best model
 
-
-def load_corpus(path: Path | str) -> str:
-    """
-    Load corpus text from file.
-    
-    Args:
-        path (Path | str): Path to the text file
-        
-    Returns:
-        str: Corpus text
-    """
-    # For .npy files, return empty string since we use memory-mapped files
-    if Path(path).suffix == '.npy':
-        return ''
-    
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
     
 def load_tokenizer(path: Path | str) -> BPE:
     """
@@ -91,8 +74,8 @@ def train() -> None:
     
     # Create Datasets
     print("Creating datasets...\n")
-    train_dataset = GPTDataset(TRAIN_PATH, CONTEXT_SIZE)  # Empty string for compatibility
-    val_dataset = GPTDataset(VAL_PATH, CONTEXT_SIZE)      # Empty string for compatibility
+    train_dataset = GPTDataset(TRAIN_PATH, CONTEXT_SIZE)
+    val_dataset = GPTDataset(VAL_PATH, CONTEXT_SIZE)
     
     print(f"Training dataset size: {len(train_dataset):,} samples\n")
     print(f"Validation dataset size: {len(val_dataset):,} samples\n")
